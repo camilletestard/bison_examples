@@ -9,12 +9,35 @@ The BISoN framework is a Bayesian modelling framework for capturing uncertainty 
 The preprint can be found at: [https://www.biorxiv.org/content/10.1101/2021.12.20.473541v1](https://www.biorxiv.org/content/10.1101/2021.12.20.473541v1).
 
 ## Examples
-* [Binary Data](examples/binary_data.md)
-* [Count Data](examples/count_data.md)
-* [Duration Data](examples/duration_data.md)
-* [Gambit of the Group Data Conversion](examples/convert_gbi.md)
-* [Partial Pooling](models/pooled_count_model.stan)
+
+This is a non-exhaustive list of some example BISoN models and auxiliary scripts. The examples are still in development and should be checked carefully before use in real analysis, but should be a good basis for beginning to work with BISoN. Please get in touch if you have any requests or spot any errors.
+
+*Note that most of these examples depend on stochastic functions for various purposes, so the outputs might not always match exactly with the text of these notebooks.*
+
+### Edge Weight Models
+* [Binary Edge Weight Model (Stan)](examples/ewm_binary.md)
+* [Count Edge Weight Model (Stan)](examples/ewm_count.md)
+* [Duration Edge Weight Model (Stan)](examples/ewm_duration.md)
+* [Binary Edge Weight Model (INLA)](examples/ewm_binary_inla.md)
+* [Count Edge Weight Model (INLA)](examples/ewm_count_inla.md)
+* ~~[Group Edge Weight Model (INLA)]()~~
+* ~~[Binary Directed Edge Weight Model (Stan)]()~~
+* ~~[Binary Edge Weight Model with Partial Pooling (Stan)]()~~
+
+### Social Network Analysis
+* [Dyadic Regression (Stan)](examples/dyadic_regression_stan.md)
+* [Nodal Regression (Stan)](examples/nodal_regression_stan.md)
+* ~~[Non-random Edge Weight Tests (Stan)]()~~
+* [Dyadic Regression (Metropolis)](examples/dyadic_regression_metropolis.md)
+* ~~[Nodal Regression (Metropolis)]()~~
+
+### Data processing and diagnostics
+* ~~[Prior Predictive Checks]()~~
+* [Group Data Conversion](examples/convert_gbi.md)
 
 ## R Package (In Development)
 
-An R package (bisonR) is currently in development and will be available soon.
+An R package (bisonR) is currently in development and will be available soon. Follow [@jordan_hart_96](https://twitter.com/jordan_hart_96) on Twitter to keep up to date with the latest developments.
+
+[![Twitter](https://img.shields.io/twitter/url/https/twitter.com/jordan_hart_96.svg?style=social&label=Follow%20%40jordan_hart_96)](https://twitter.com/jordan_hart_96)
+

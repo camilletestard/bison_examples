@@ -18,7 +18,7 @@ library(rstan)
 For the example, simulate some random GBI data.
 
 ```{r}
-obs <- t(sapply(1:20, function(x) rbinom(8, 1, runif(1, min=0.2, max=0.4))))
+obs <- t(sapply(1:50, function(x) rbinom(8, 1, runif(1, min=0.2, max=0.4))))
 obs
 ```
 
@@ -89,3 +89,75 @@ Do a quick visualisation of the parameter values.
 plot(fit, pars="logit_p")
 ```
 The rest of the analysis can proceed in the same way as the other analyses.
+
+```{r}
+df_inla <- df
+df_inla$dyad_id <- as.factor(df$dyad_id)
+df_inla$obs_id <- as.factor(df$obs_id)
+prior.fixed <- list(mean=0, prec=1)
+prior.random <- list(prec=list(prior="normal", param=c(0, 1)))
+fit_inla <- inla(social_event ~ 0 + dyad_id + f(obs_id, model="iid", hyper=prior.random), 
+                 family="binomial", 
+                 data=df_inla,
+                 control.fixed=prior.fixed,
+                 control.compute=list(config = TRUE)
+)
+summary(fit_inla)$fixed
+```
+
+```{r}
+est_inla <- summary(fit_inla)$fixed[1:28, 1]
+est_stan <- summary(fit)$summary[1:28, 1]
+
+plot(est_stan, est_inla)
+```
+
+```{r}
+# How many samples to draw from posteriors. 4000 to match Stan, but samples are really cheap here so no reason not to increase this.
+num_samples <- 4000
+logit_p_samples <- matrix(0, nrow=num_samples, ncol=model_data$M)
+
+param_names <- names(fit_inla$marginals.fixed)
+for (i in 1:model_data$M) {
+  param_zmarg <- inla.zmarginal(fit_inla$marginals.fixed[[param_names[i]]], silent=TRUE)
+  
+  mu <- param_zmarg[[1]]
+  sigma <- param_zmarg[[2]]
+  
+  logit_p_samples[, i] <- rnorm(num_samples, mu, sigma)
+}
+logit_p_samples
+```
+
+```{r}
+p_samples <- plogis(logit_p_samples)
+adj_tensor <- array(0, c(8, 8, num_iterations))
+for (dyad_id in 1:model_data$M) {
+  dyad_row <- df_agg[df_agg$dyad_id == dyad_id, ]
+  adj_tensor[dyad_row$node_1_id, dyad_row$node_2_id, ] <- p_samples[, dyad_id]
+}
+adj_tensor[, , 1] # Print the first sample of the posterior distribution over adjacency matrices
+```
+
+```{r}
+# Calculate lower, median, and upper quantiles of edge weights. Lower and upper give credible intervals.
+adj_quantiles <- apply(adj_tensor_transformed, c(1, 2), function(x) quantile(x, probs=c(0.025, 0.5, 0.975)))
+adj_lower <- adj_quantiles[1, , ]
+adj_mid <- adj_quantiles[2, , ]
+adj_upper <- adj_quantiles[3, , ]
+
+# Calculate width of credible intervals.
+adj_range <- adj_upper - adj_lower
+adj_range[is.nan(adj_range)] <- 0
+
+# Generate two igraph objects, one form the median and one from the standardised width.
+g_mid <- graph_from_adjacency_matrix(adj_mid, mode="undirected", weighted=TRUE)
+g_range <- graph_from_adjacency_matrix(adj_range, mode="undirected", weighted=TRUE)
+
+# Plot the median graph first and then the standardised width graph to show uncertainty over edges.
+coords <- igraph::layout_nicely(g_mid)
+plot(g_mid, edge.width=3 * E(g_mid)$weight, edge.color="black",  layout=coords)
+plot(g_mid, edge.width=20 * E(g_range)$weight, edge.color=rgb(0, 0, 0, 0.25), 
+     vertex.label=c("Rey", "Leia", "Obi-Wan", "Luke", "C-3PO", "BB-8", "R2-D2", "D-O"), 
+     vertex.label.dist=4, vertex.label.color="black", layout=coords, add=TRUE)
+```

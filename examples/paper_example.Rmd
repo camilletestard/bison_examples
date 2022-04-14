@@ -76,7 +76,7 @@ model <- stan_model("../models/count_model.stan")
 Compiling the model may take a minute or two, but once this is done, the model can be fit using `sampling()`. The argument `cores` sets the number of CPU cores to be used for fitting the model, if your computer has 4 or more cores, it's worth setting this to 4.
 
 ```{r}
-fit <- sampling(model, model_data, cores=4, iter=5000, refresh=500)
+fit <- sampling(model, model_data, cores=4, iter=2000, refresh=500)
 ```
 
 # Model checking
@@ -111,19 +111,23 @@ lines(density(df_agg$event_count_total), lwd=3, main="", xlab="Dyadic event coun
 # axis(side = 1)
 ```
 
-```{r, fig.width=6, fig.height=5}
-log_p_samples <- extract(fit)$log_p
+```{r, fig.width=3, fig.height=2.5}
+log_p_samples <- exp(extract(fit)$log_p)
 p_quantiles <- apply(log_p_samples, 2, function(x) quantile(x, probs=c(0.025, 0.5, 0.975)))
 
 plot(t(data$p)[lower.tri(data$p)], p_quantiles[2, ])
 
-df_comparison <- data.frame(true=log(t(data$p)[lower.tri(data$p)]), est=p_quantiles[2, ], est_lower=p_quantiles[1, ], est_upper=p_quantiles[3, ])
+df_comparison <- data.frame(true=t(data$p)[lower.tri(data$p)], est=p_quantiles[2, ], est_lower=p_quantiles[1, ], est_upper=p_quantiles[3, ])
+
+line_fit <- lm(est ~ true, df_comparison)
 ggplot(df_comparison, aes(x=true, y=est)) +
   geom_point(color="#387780") +
   geom_errorbar(aes(ymin=est_lower, ymax=est_upper)) +
   geom_abline() +
+  geom_point(x=0, y=0) +
+  geom_abline(intercept=line_fit$coefficients[1], slope=line_fit$coefficients[2], color="#387780", linetype="dashed") +
   labs(x="Underlying edge weight", y="Estimated edge weight") +
-  coord_cartesian(ylim=c(-1, 3)) +
+  coord_cartesian(xlim=c(0, NA)) +
   theme_classic()
 
 ggsave("true_vs_est.png", dpi=600)
